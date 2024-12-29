@@ -7,7 +7,7 @@
 //
 // SPDX-License-Identifier: EPL-2.0 OR GPL-3.0
 
-use std::{str::FromStr, time::Duration};
+use std::{collections::VecDeque, str::FromStr, time::Duration};
 
 use adaptive_backoff::prelude::{Backoff, BackoffBuilder, ExponentialBackoffBuilder};
 use anyhow::Result;
@@ -193,6 +193,18 @@ impl Mqtt {
 
         self.mqtt_client.subscribe_many([filter]).await.unwrap();
 
+        let mut request_queue = VecDeque::new();
+
+        if CLI.initial_request {
+            if let Some(project) = CLI.project.as_ref() {
+                for group in project.groups.groups.iter() {
+                    request_queue.push_back(group.address);
+                }
+
+                debug!("initial request for {} groups", request_queue.len());
+            }
+        }
+
         loop {
             tokio::select! {
                 _ = self.interrupt.recv() => {
@@ -233,8 +245,20 @@ impl Mqtt {
                     };
                 }
 
+                _ = tokio::time::sleep(if request_queue.is_empty() {
+                    Duration::MAX
+                } else {
+                    CLI.initial_request_delay
+                }) => {
+                    if let Some(group) = request_queue.pop_front() {
+                        let _ = connection.group_request(group).await;
+                    }
+                }
+
                 recv = connection.recv() => {
-                    if let Some(cemi)  = recv {
+                    if let Some(cemi) = recv {
+
+
                         match self.handle_knx(cemi) {
                             Ok(Some((topic, message))) => {
                                 debug!(topic, message, "mqtt message");
@@ -249,7 +273,6 @@ impl Mqtt {
                             Err(error) => {
                                 warn!(%error, "cannot handle incoming knx message");
                             }
-
                         }
                     } else {
                         debug!("bus connection closed");

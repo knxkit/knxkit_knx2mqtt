@@ -10,6 +10,7 @@
 use std::{
     net::{IpAddr, Ipv4Addr},
     sync::LazyLock,
+    time::Duration,
 };
 
 use anyhow::{bail, Result};
@@ -63,6 +64,12 @@ pub struct Cli {
 
     #[arg(long)]
     pub ignore_unknown: bool,
+
+    #[arg(long, default_value = "true")]
+    pub initial_request: bool,
+
+    #[arg( long, default_value="100ms", value_parser = humantime::parse_duration)]
+    pub initial_request_delay: Duration,
 }
 
 pub static CLI: LazyLock<Cli> = LazyLock::new(Cli::parse);

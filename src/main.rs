@@ -254,8 +254,6 @@ impl Mqtt {
 
                 recv = connection.recv() => {
                     if let Some(cemi) = recv {
-
-
                         match self.handle_knx(cemi) {
                             Ok(Some((topic, message))) => {
                                 debug!(topic, message, "mqtt message");
@@ -310,7 +308,7 @@ async fn main() {
         use tracing_subscriber::filter::targets::Targets;
         use tracing_subscriber::prelude::*;
 
-        let filter = Targets::default().with_target("knxkit_mqtt", tracing::Level::DEBUG);
+        let filter = Targets::default().with_target("knx2mqtt", tracing::Level::DEBUG);
 
         let format = tracing_subscriber::fmt::layer().compact();
 

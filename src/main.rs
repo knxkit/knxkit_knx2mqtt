@@ -51,10 +51,8 @@ struct Mqtt {
 
 #[derive(Clone, Debug, Default, Serialize)]
 struct MqttGroupMessageOut {
-    group: String,
     raw: String,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
     dpt: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -101,7 +99,6 @@ impl Mqtt {
 
             if service == Service::GroupValueWrite || service == Service::GroupValueResponse {
                 let mut message = MqttGroupMessageOut {
-                    group: group.to_string(),
                     raw: data.to_string(),
                     ..Default::default()
                 };
